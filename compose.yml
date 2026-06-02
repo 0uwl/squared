@@ -1,0 +1,13 @@
+services:
+  iso-builder:
+    build: .
+    privileged: true
+    volumes:
+      - ${UBUNTU_ISO:-./ubuntu-26.04-desktop-amd64.iso}:/input/base.iso:ro
+      - ./overlay:/build/overlay:ro
+      - ./work:/build/work
+      - ./output:/output
+    environment:
+      LABEL:        ${LABEL:-CUSTOM_UBUNTU_2604}
+      SQUASHFS:     ${SQUASHFS:-minimal.squashfs}
+      OUTPUT_NAME:  ${OUTPUT_NAME:-custom-ubuntu-26.04}
