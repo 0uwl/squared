@@ -3,7 +3,7 @@ services:
     build: .
     privileged: true
     volumes:
-      - ${UBUNTU_ISO:-./ubuntu-desktop-amd64.iso}:/input/base.iso:ro
+      - ${UBUNTU_ISO:?Set UBUNTU_ISO to the path of your source Ubuntu ISO}:/input/base.iso:ro
       - ./overlay:/build/overlay:ro
       - ./work:/build/work
       - ./output:/output
