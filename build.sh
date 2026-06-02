@@ -193,3 +193,6 @@ echo "------------------------------------------------------------"
 echo " ISO complete: $OUTPUT_ISO"
 echo " Size:         $(du -sh "$OUTPUT_ISO" | cut -f1)"
 echo "------------------------------------------------------------"
+
+# Remove intermediate build artifacts to reclaim disk space
+rm -rf /build/work
