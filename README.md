@@ -81,7 +81,7 @@ Set these in `.env` when using Compose, or pass with `-e KEY=VALUE` when using `
 | `BASE_ISO` | `/input/base.iso` | Path to the source ISO **inside the container**. Only needed if you change the Compose volume mount. |
 | `OUTPUT_DIR` | `/output` | Directory where the finished ISO is written **inside the container**. |
 | `LABEL` | `CUSTOM_UBUNTU` | Volume label embedded in the ISO. Visible in file managers and `blkid`. |
-| `SQUASHFS` | `filesystem.squashfs` | Filename of the squashfs to extract and repack inside `casper/`. Override when the source ISO uses a different name (e.g. `ubuntu-server-minimal.squashfs`). |
+| `SQUASHFS` | *(auto-detected)* | Squashfs filename to extract and repack from `casper/`. If unset, the build scans `casper/` and uses the file automatically when exactly one is found. Set explicitly when the ISO contains multiple squashfs files. |
 | `OUTPUT_NAME` | `custom-ubuntu` | Base name of the output ISO file. A datestamp is always appended, producing `<OUTPUT_NAME>-YYYYMMDD-HHMM.iso`. |
 
 ---

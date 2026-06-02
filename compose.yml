@@ -10,5 +10,5 @@ services:
     environment:
       TZ:           ${TZ:-UTC}
       LABEL:        ${LABEL:-CUSTOM_UBUNTU}
-      SQUASHFS:     ${SQUASHFS:-minimal.squashfs}
+      SQUASHFS:     ${SQUASHFS:-}
       OUTPUT_NAME:  ${OUTPUT_NAME:-custom-ubuntu}

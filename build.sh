@@ -12,7 +12,7 @@ OVERLAY_DIR="/build/overlay"
 SCRIPT_DIR="/build/scripts"
 GRUB_CFG="/build/grub/grub.cfg"
 LABEL="${LABEL:-CUSTOM_UBUNTU}"
-SQUASHFS="${SQUASHFS:-filesystem.squashfs}"
+SQUASHFS="${SQUASHFS:-}"
 OUTPUT_NAME="${OUTPUT_NAME:-custom-ubuntu}"
 
 # -- Preflight checks ----------------------------------------------------------
@@ -50,6 +50,35 @@ chmod -R u+w "$WORK_ISO"
 BOOT_FLAGS=$(xorriso -indev "$BASE_ISO" -report_system_area as_mkisofs 2>/dev/null \
     | grep -v '^\s*-V ' \
     | tr '\n' ' ')
+
+# Read the Ubuntu version string from the ISO metadata.
+DISK_INFO="$WORK_ISO/.disk/info"
+if [[ -f "$DISK_INFO" ]]; then
+    echo "      Detected: $(cat "$DISK_INFO")"
+else
+    echo "      WARNING: .disk/info not found — may not be a standard Ubuntu ISO"
+fi
+
+# Resolve the squashfs filename. If SQUASHFS was not set by the user, try the
+# two known default names before giving up.
+if [[ -z "$SQUASHFS" ]]; then
+    if [[ -f "$WORK_ISO/casper/filesystem.squashfs" ]]; then
+        SQUASHFS="filesystem.squashfs"
+    elif [[ -f "$WORK_ISO/casper/minimal.squashfs" ]]; then
+        SQUASHFS="minimal.squashfs"
+    else
+        mapfile -t squashfs_files < <(find "$WORK_ISO/casper" -maxdepth 1 -name "*.squashfs" -printf "%f\n" | sort)
+        echo "ERROR: could not auto-detect squashfs — neither filesystem.squashfs nor minimal.squashfs" >&2
+        echo "       found in casper/. Set SQUASHFS explicitly to one of:" >&2
+        for f in "${squashfs_files[@]}"; do
+            echo "         $f" >&2
+        done
+        exit 1
+    fi
+    echo "      Auto-detected squashfs: $SQUASHFS"
+else
+    echo "      Using squashfs: $SQUASHFS"
+fi
 
 echo "      Done."
 
