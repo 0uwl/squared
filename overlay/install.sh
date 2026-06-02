@@ -5,11 +5,10 @@
 set -euo pipefail
 
 # -- Example: install packages -------------------------------------------------
-# apt-get update
-# apt-get install -y --no-install-recommends \
-#     vim \
-#     htop \
-#     tmux
+apt-get update
+apt-get install -y --no-install-recommends \
+    vim \
+    htop \
 
 # -- Example: install local .deb packages from resources/ ---------------------
 # apt-get install -y ./resources/*.deb
@@ -17,9 +16,10 @@ set -euo pipefail
 # -- Example: copy a config file ----------------------------------------------
 # cp resources/myconfig /etc/myconfig
 
-
 # -- Example: create a default user ----------------------------------------------
-USERNAME="user"
+# These can be overridden via overlay/.env
+USERNAME="${USERNAME:-user}"
+PASSWORD="${PASSWORD:-changeme}"
 
 # Create the user with a home directory and bash as default shell
 useradd -m -s /bin/bash -c "Default User" "$USERNAME"
@@ -27,8 +27,7 @@ useradd -m -s /bin/bash -c "Default User" "$USERNAME"
 # Add to standard desktop groups
 usermod -aG sudo,audio,video,plugdev,netdev "$USERNAME"
 
-# Set the password to "changeme"
-echo "${USERNAME}:changeme" | chpasswd
+echo "${USERNAME}:${PASSWORD}" | chpasswd
 
 # Configure GDM3 auto-login (Ubuntu 22.04+ default display manager)
 mkdir -p /etc/gdm3

@@ -129,6 +129,13 @@ chroot "$WORK_FS" /bin/bash -c "
     export HOME=/root
     export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
+    # Load user-defined variables from overlay/.env if present
+    if [[ -f /tmp/overlay/.env ]]; then
+        set -a
+        source /tmp/overlay/.env
+        set +a
+    fi
+
     # Run the user's customization script
     cd /tmp/overlay
     bash install.sh
