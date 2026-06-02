@@ -1,0 +1,9 @@
+# Working directories created at build time
+work/
+output/
+
+# Source and output ISOs
+*.iso
+
+# Local environment overrides
+.env

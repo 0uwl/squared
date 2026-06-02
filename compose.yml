@@ -1,0 +1,14 @@
+services:
+  iso-builder:
+    build: .
+    privileged: true
+    volumes:
+      - ${UBUNTU_ISO:-./ubuntu-desktop-amd64.iso}:/input/base.iso:ro
+      - ./overlay:/build/overlay:ro
+      - ./work:/build/work
+      - ./output:/output
+    environment:
+      TZ:           ${TZ:-UTC}
+      LABEL:        ${LABEL:-CUSTOM_UBUNTU}
+      SQUASHFS:     ${SQUASHFS:-minimal.squashfs}
+      OUTPUT_NAME:  ${OUTPUT_NAME:-custom-ubuntu}
