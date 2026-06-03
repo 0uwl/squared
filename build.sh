@@ -214,6 +214,7 @@ OUTPUT_ISO="$OUTPUT_DIR/${OUTPUT_NAME}-${TIMESTAMP}.iso"
 # xorriso emits and expects to receive back as shell-quoted tokens.
 eval "xorriso -as mkisofs \
     -r \
+    -iso-level 3 \
     -V '$LABEL' \
     -o '$OUTPUT_ISO' \
     $BOOT_FLAGS \
