@@ -4,11 +4,22 @@
 # so ./resources/ is directly accessible.
 set -euo pipefail
 
-# -- Example: install packages -------------------------------------------------
+# -- Example: set hostname -------------------------------------------------
+HOSTNAME=${HOSTNAME:-custom-ubuntu}
+hostname $HOSTNAME
+
+# -- Example: update repositories and packages -------------------------------------------------
+echo
+echo "Updating repositories and packages"
 apt-get update
-apt-get install -y --no-install-recommends \
-    vim \
-    htop \
+apt-get upgrade -y
+
+# -- Example: install packages -------------------------------------------------
+PACKAGES=${PACKAGES:-nano}
+echo
+echo "Installing APT packages: $PACKAGES"
+apt-get update
+apt-get install -y $PACKAGES
 
 # -- Example: install local .deb packages from resources/ ---------------------
 # apt-get install -y ./resources/*.deb

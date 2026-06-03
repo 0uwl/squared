@@ -14,6 +14,9 @@ GRUB_CFG="/build/grub/grub.cfg"
 LABEL="${LABEL:-CUSTOM_UBUNTU}"
 SQUASHFS="${SQUASHFS:-}"
 OUTPUT_NAME="${OUTPUT_NAME:-custom-ubuntu}"
+GRUB_TITLE="${GRUB_TITLE:-Custom Ubuntu}"
+GRUB_TIMEOUT="${GRUB_TIMEOUT:-10}"
+GRUB_DEFAULT="${GRUB_DEFAULT:-0}"
 
 # -- Preflight checks ----------------------------------------------------------
 if [[ $EUID -ne 0 ]]; then
@@ -56,7 +59,7 @@ DISK_INFO="$WORK_ISO/.disk/info"
 if [[ -f "$DISK_INFO" ]]; then
     echo "      Detected: $(cat "$DISK_INFO")"
 else
-    echo "      WARNING: .disk/info not found — may not be a standard Ubuntu ISO"
+    echo "      WARNING: .disk/info not found - may not be a standard Ubuntu ISO"
 fi
 
 # Resolve the squashfs filename. If SQUASHFS was not set by the user, try the
@@ -68,7 +71,7 @@ if [[ -z "$SQUASHFS" ]]; then
         SQUASHFS="minimal.squashfs"
     else
         mapfile -t squashfs_files < <(find "$WORK_ISO/casper" -maxdepth 1 -name "*.squashfs" -printf "%f\n" | sort)
-        echo "ERROR: could not auto-detect squashfs — neither filesystem.squashfs nor minimal.squashfs" >&2
+        echo "ERROR: could not auto-detect squashfs - neither filesystem.squashfs nor minimal.squashfs" >&2
         echo "       found in casper/. Set SQUASHFS explicitly to one of:" >&2
         for f in "${squashfs_files[@]}"; do
             echo "         $f" >&2
@@ -85,7 +88,8 @@ echo "      Done."
 # -- Step 2: Extract squashfs root filesystem ----------------------------------
 echo
 echo "[2/6] Extracting squashfs root filesystem..."
-rm -rf "${WORK_FS:?}"/*
+rm -rf "${WORK_FS:?}"
+mkdir -p "$WORK_FS"
 unsquashfs -d "$WORK_FS" "$WORK_ISO/casper/$SQUASHFS"
 echo "      Done."
 
@@ -93,14 +97,26 @@ echo "      Done."
 echo
 echo "[3/6] Preparing chroot environment..."
 
-# Resolve DNS inside chroot during package installs
-cp /etc/resolv.conf "$WORK_FS/etc/resolv.conf"
+
+# The live ISO ships a cdrom apt source for offline use (in sources.list.d/
+# on newer Ubuntu using deb822 format, or sources.list on older releases).
+# Remove both - /cdrom is not mounted in the chroot build environment.
+rm -f "$WORK_FS/etc/apt/sources.list.d/cdrom.sources"
+sed -i 's|^deb cdrom:|# deb cdrom:|' "$WORK_FS/etc/apt/sources.list" 2>/dev/null || true
+sed -i 's|^deb file:/cdrom|# deb file:/cdrom|' "$WORK_FS/etc/apt/sources.list" 2>/dev/null || true
 
 mount --bind /dev      "$WORK_FS/dev"
 mount --bind /dev/pts  "$WORK_FS/dev/pts"
 mount -t proc  proc    "$WORK_FS/proc"
 mount -t sysfs sysfs   "$WORK_FS/sys"
 mount -t tmpfs tmpfs   "$WORK_FS/run"
+
+# Resolve DNS inside chroot during package installs. Must happen AFTER the
+# tmpfs is mounted on /run: on Ubuntu 22.04+, /etc/resolv.conf inside the
+# squashfs is a symlink into /run/systemd/resolve/, which is hidden by the
+# fresh tmpfs. Removing the symlink first makes cp write a real file.
+rm -f "$WORK_FS/etc/resolv.conf"
+cp /etc/resolv.conf "$WORK_FS/etc/resolv.conf"
 
 # Always unmount cleanly, even on error
 cleanup() {
@@ -111,6 +127,10 @@ cleanup() {
     umount -lf "$WORK_FS/proc"    2>/dev/null || true
     umount -lf "$WORK_FS/sys"     2>/dev/null || true
     umount -lf "$WORK_FS/run"     2>/dev/null || true
+
+    echo "[cleanup] Removing intermediate build artifacts..."
+    rm -rf "${WORK_FS:?}" "${WORK_ISO:?}"
+    echo "[cleanup] Post-run cleanup complete"
 }
 trap cleanup EXIT
 
@@ -146,6 +166,15 @@ chroot "$WORK_FS" /bin/bash -c "
 
 echo "      Done."
 
+# -- Optional: Interactive chroot shell ----------------------------------------
+if [[ "${INTERACTIVE:-0}" == "1" ]]; then
+    echo
+    echo "[interactive] Dropping into chroot shell. Make your changes, then type 'exit' or Ctrl-D to continue the build."
+    chroot "$WORK_FS" /bin/bash --login || true
+    echo
+    echo "[interactive] Shell exited. Continuing build..."
+fi
+
 # -- Step 5: Repack squashfs ---------------------------------------------------
 echo
 echo "[5/6] Repacking squashfs (this takes a few minutes)..."
@@ -172,7 +201,9 @@ echo "      Done. Squashfs size: $(du -sh "$WORK_ISO/casper/$SQUASHFS" | cut -f1
 echo
 echo "[6/6] Building final ISO..."
 
-cp "$GRUB_CFG" "$WORK_ISO/boot/grub/grub.cfg"
+GRUB_TITLE="$GRUB_TITLE" GRUB_TIMEOUT="$GRUB_TIMEOUT" GRUB_DEFAULT="$GRUB_DEFAULT" \
+    envsubst '$GRUB_TITLE $GRUB_TIMEOUT $GRUB_DEFAULT' \
+    < "$GRUB_CFG" > "$WORK_ISO/boot/grub/grub.cfg"
 
 TIMESTAMP=$(date +%Y%m%d-%H%M)
 OUTPUT_ISO="$OUTPUT_DIR/${OUTPUT_NAME}-${TIMESTAMP}.iso"
@@ -193,6 +224,3 @@ echo "------------------------------------------------------------"
 echo " ISO complete: $OUTPUT_ISO"
 echo " Size:         $(du -sh "$OUTPUT_ISO" | cut -f1)"
 echo "------------------------------------------------------------"
-
-# Remove intermediate build artifacts to reclaim disk space
-rm -rf /build/work

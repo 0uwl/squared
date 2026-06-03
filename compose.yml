@@ -2,6 +2,8 @@ services:
   iso-builder:
     build: .
     privileged: true
+    stdin_open: true
+    tty: true
     volumes:
       - ${UBUNTU_ISO:?Set UBUNTU_ISO to the path of your source Ubuntu ISO}:/input/base.iso:ro
       - ./overlay:/build/overlay:ro
@@ -12,3 +14,7 @@ services:
       LABEL:        ${LABEL:-CUSTOM_UBUNTU}
       SQUASHFS:     ${SQUASHFS:-}
       OUTPUT_NAME:  ${OUTPUT_NAME:-custom-ubuntu}
+      INTERACTIVE:  ${INTERACTIVE:-0}
+      GRUB_TITLE:   ${GRUB_TITLE:-Custom Ubuntu}
+      GRUB_TIMEOUT: ${GRUB_TIMEOUT:-10}
+      GRUB_DEFAULT: ${GRUB_DEFAULT:-0}

@@ -6,14 +6,14 @@ set -euo pipefail
 # Remove the overlay directory used during this build
 rm -rf /tmp/overlay
 
-# Wipe apt cache — it would be stale the moment the ISO boots anyway
+# Wipe apt cache - it would be stale the moment the ISO boots anyway
 apt-get clean
 rm -rf /var/lib/apt/lists/*
 
 # Wipe temporary files
 rm -rf /tmp/* /var/tmp/*
 
-# Wipe logs — they reflect the build environment, not the live system
+# Wipe logs - they reflect the build environment, not the live system
 find /var/log -type f -delete
 
 # A unique machine-id is generated on first boot by systemd.

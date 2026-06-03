@@ -77,12 +77,13 @@ Set these in `.env` when using Compose, or pass with `-e KEY=VALUE` when using `
 | Variable | Default | Description |
 |---|---|---|
 | `TZ` | `UTC` | Timezone used for the datestamp in the output filename. Accepts any tz database name (e.g. `Europe/Stockholm`). |
-| `UBUNTU_ISO` | NONE (User required) | Host path to the source Ubuntu ISO. Compose only — maps it to `/input/base.iso` inside the container. |
+| `UBUNTU_ISO` | NONE (User required) | Host path to the source Ubuntu ISO. Compose only - maps it to `/input/base.iso` inside the container. |
 | `BASE_ISO` | `/input/base.iso` | Path to the source ISO **inside the container**. Only needed if you change the Compose volume mount. |
 | `OUTPUT_DIR` | `/output` | Directory where the finished ISO is written **inside the container**. |
 | `LABEL` | `CUSTOM_UBUNTU` | Volume label embedded in the ISO. Visible in file managers and `blkid`. |
 | `SQUASHFS` | *(auto-detected)* | Squashfs filename to extract and repack from `casper/`. If unset, the build scans `casper/` and uses the file automatically when exactly one is found. Set explicitly when the ISO contains multiple squashfs files. |
 | `OUTPUT_NAME` | `custom-ubuntu` | Base name of the output ISO file. A datestamp is always appended, producing `<OUTPUT_NAME>-YYYYMMDD-HHMM.iso`. |
+| `INTERACTIVE` | `0` | Set to `1` to drop into an interactive shell inside the chroot after `install.sh` finishes. Exit the shell to resume the build. See [Interactive shell](#interactive-shell). |
 
 ---
 
@@ -106,7 +107,7 @@ The ISO boots with GRUB and presents three entries:
 
 | Entry | Description |
 |---|---|
-| **RAM boot (quiet)** | Copies the entire filesystem into RAM before mounting — default. The boot media can be removed once the system is up. |
+| **RAM boot (quiet)** | Copies the entire filesystem into RAM before mounting - default. The boot media can be removed once the system is up. |
 | **RAM boot (verbose)** | Same as above with full kernel output, useful for debugging boot issues. |
 | **Run from media** | Mounts the squashfs directly from the USB/disc without copying to RAM. Slower but works on systems with less memory. |
 
@@ -118,4 +119,30 @@ The `toram` kernel parameter (used by the first two entries) requires enough fre
 
 Edit [`overlay/install.sh`](overlay/install.sh) to change what gets installed or configured. The script runs as root inside the chroot. After it exits, [`scripts/chroot-cleanup.sh`](scripts/chroot-cleanup.sh) runs automatically to remove the apt cache, logs, machine-id, and SSH host keys before the image is compressed.
 
-Place additional `.deb` packages or resource files in `overlay/resources/` — `install.sh` installs everything matching `./resources/*.deb` automatically.
+Place additional `.deb` packages or resource files in `overlay/resources/` - `install.sh` installs everything matching `./resources/*.deb` automatically.
+
+### Interactive shell
+
+Set `INTERACTIVE=1` to pause the build after `install.sh` and drop into a live bash shell inside the chroot. This lets you inspect the environment, run commands, and make one-off changes before the filesystem is repacked into the ISO.
+
+**With Docker Compose:**
+
+```bash
+INTERACTIVE=1 docker compose run --rm iso-builder
+```
+
+**With Docker directly:**
+
+```bash
+docker run --rm -it --privileged \
+    -e INTERACTIVE=1 \
+    -v /path/to/ubuntu-desktop-amd64.iso:/input/base.iso:ro \
+    -v $(pwd)/overlay:/build/overlay:ro \
+    -v $(pwd)/work:/build/work \
+    -v $(pwd)/output:/output \
+    iso-builder
+```
+
+> **Note:** The `-it` flag (or `stdin_open`/`tty` in Compose) is required. Without a TTY, the interactive shell exits immediately.
+
+Type `exit` or press `Ctrl-D` to leave the shell and continue the build normally.

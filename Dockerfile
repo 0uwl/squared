@@ -37,9 +37,9 @@ COPY grub/          /build/grub/
 RUN chmod +x /build/build.sh /build/scripts/*.sh
 
 # Expected volume mounts at runtime:
-#   /input/base.iso        — source Ubuntu ISO (read-only)
-#   /build/overlay         — your customization folder with install.sh
-#   /build/work            — working directory (needs ~10 GB free)
-#   /output                — final ISO is written here
+#   /input/base.iso        - source Ubuntu ISO (read-only)
+#   /build/overlay         - your customization folder with install.sh
+#   /build/work            - working directory (needs ~10 GB free)
+#   /output                - final ISO is written here
 
 ENTRYPOINT ["/build/build.sh"]
