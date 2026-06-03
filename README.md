@@ -85,11 +85,19 @@ Clone this repository locally so that you get the example files and the correct 
 ```bash
 git clone https://github.com/0uwl/squared.git
 ```
+__Using pre-built container__
+
+There is a pre-built container image available. 
+```bash
+docker pull docker pull ghcr.io/0uwl/squared:latest
+```
+
+__Building container from source__
+
 Move into the cloned repo and build the Squared container image locally:
 ```bash
 docker build -t squared:latest    # This assumes you are currently standing inside the repo
 ```
-> There is a plan to provide a pre-built Docker image in the future. However, it is very likely that you will have to modify the image yourself to fit your needs.
 
 ### Running
 
@@ -97,14 +105,14 @@ __Docker Compose__
 
 A compose.yml is included in the repo but you must change the volume that binds the base Ubuntu Desktop ISO file in to the build container. 
 
-It is most convenient to use `docker compose run` instead of the usual `docker compose up` since this command has the `--rm` flag which automatically removes the container after exiting.
+It is recommended to use `docker compose run` instead of the usual `docker compose up` since this command has the `--rm` flag which automatically removes the container after exiting.
 ```bash
 docker compose run --rm squared
 ```
 
 __Docker run__
 
-If you prefer to run the container directly, you can do so with the following command (assuming you named the image `squared` when building it):
+If you prefer to run the container directly, you can do so with the following command (assuming the image is called `squared`):
 
 ```bash
 docker run --rm --privileged \
