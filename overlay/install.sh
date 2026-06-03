@@ -40,6 +40,16 @@ usermod -aG sudo,audio,video,plugdev,netdev "$USERNAME"
 
 echo "${USERNAME}:${PASSWORD}" | chpasswd
 
+# -- Example: run the rest of the setup as the new user ----------------------
+# Use a heredoc with su to drop privileges for user-space configuration.
+# Commands inside will execute as $USERNAME with their home directory and
+# environment loaded (equivalent to an interactive login shell).
+su - "$USERNAME" <<USEREOF
+# Set up dotfiles, configure the shell, etc.
+mkdir -p ~/bin
+echo 'export PATH="$HOME/bin:$PATH"' >> ~/.bashrc
+USEREOF
+
 # Configure GDM3 auto-login (Ubuntu 22.04+ default display manager)
 mkdir -p /etc/gdm3
 cat > /etc/gdm3/custom.conf <<EOF

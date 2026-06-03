@@ -170,7 +170,7 @@ echo "      Done."
 if [[ "${INTERACTIVE:-0}" == "1" ]]; then
     echo
     echo "[interactive] Dropping into chroot shell. Make your changes, then type 'exit' or Ctrl-D to continue the build."
-    chroot "$WORK_FS" /bin/bash --login || true
+    PS1='(chroot) \u:\w\$ ' TERM="$TERM" chroot "$WORK_FS" /bin/bash --norc --noprofile -i || true
     echo
     echo "[interactive] Shell exited. Continuing build..."
 fi
