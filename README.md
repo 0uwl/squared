@@ -1,6 +1,8 @@
 # Squared
 
-Squared is an automated build pipeline for customized Ubuntu Desktop ISOs. Inspired by [Cubic](https://github.com/PJ-Singh-001/Cubic) but with one less dimension (no GUI, CLI-only tool). Uses a reproducible, scriptable Docker container to produce a bootable Ubuntu Desktop ISO-file. For more advanced use-cases it is recommended to use Cubic.
+Squared is an automated build pipeline for customized Ubuntu Desktop ISOs. Inspired by [Cubic](https://github.com/PJ-Singh-001/Cubic) but with one less dimension (no GUI, CLI-only tool). Uses a reproducible, scriptable Docker container to produce a bootable Ubuntu Desktop ISO-file. For more advanced use-cases it is still recommended to use Cubic.
+
+Squared should be seen as a springboard for you to create your own custom Ubuntu Desktop ISO building pipeline. It covers the basics, but you are expected to do most of the actual customization.
 
 ---
 
@@ -28,47 +30,6 @@ Squared is an automated build pipeline for customized Ubuntu Desktop ISOs. Inspi
 └── scripts/
     └── chroot-cleanup.sh          # Post-install cleanup (auto-run after install.sh)
 ```
-
----
-
-## Building
-
-### With Docker Compose (recommended)
-
-**1.** Create a `.env` file at the project root to set the path to your source ISO:
-
-```ini
-UBUNTU_ISO=/path/to/ubuntu-desktop-amd64.iso
-```
-
-**2.** Build and run:
-
-```bash
-docker compose up --build
-```
-
-### With Docker directly
-
-**1. Build the image:**
-
-```bash
-docker build -t iso-builder .
-```
-
-**2. Run the pipeline:**
-
-```bash
-docker run --rm --privileged \
-    -v /path/to/ubuntu-desktop-amd64.iso:/input/base.iso:ro \
-    -v $(pwd)/overlay:/build/overlay:ro \
-    -v $(pwd)/work:/build/work \
-    -v $(pwd)/output:/output \
-    iso-builder
-```
-
-The finished ISO is written to `./output/` with a datestamp in the filename.
-
----
 
 ## Environment Variables
 
@@ -101,48 +62,61 @@ This is what the build.sh script does:
 
 ---
 
-## Boot Menu
-
-The ISO boots with GRUB and presents three entries:
-
-| Entry | Description |
-|---|---|
-| **RAM boot (quiet)** | Copies the entire filesystem into RAM before mounting - default. The boot media can be removed once the system is up. |
-| **RAM boot (verbose)** | Same as above with full kernel output, useful for debugging boot issues. |
-| **Run from media** | Mounts the squashfs directly from the USB/disc without copying to RAM. Slower but works on systems with less memory. |
-
-The `toram` kernel parameter (used by the first two entries) requires enough free RAM to hold the decompressed filesystem, typically **6–8 GB** for this image.
-
----
-
 ## Customization
 
-Edit [`overlay/install.sh`](overlay/install.sh) to change what gets installed or configured. The script runs as root inside the chroot. After it exits, [`scripts/chroot-cleanup.sh`](scripts/chroot-cleanup.sh) runs automatically to remove the apt cache, logs, machine-id, and SSH host keys before the image is compressed.
+Edit [`overlay/install.sh`](overlay/install.sh) to change what gets installed or configured inside the build container. The script runs as root inside the chroot. After it exits, [`scripts/chroot-cleanup.sh`](scripts/chroot-cleanup.sh) runs automatically to remove the apt cache, logs, machine-id, and SSH host keys before the image is compressed.
 
-Place additional `.deb` packages or resource files in `overlay/resources/` - `install.sh` installs everything matching `./resources/*.deb` automatically.
+The possibilites are endless which means that Squared cannot cover all possible scenarios for what you do inside the install.sh script. Squared should be seen as a springboard for you to create your own build pipeline for custom Ubuntu Desktop ISOs.
 
 ### Interactive shell
 
+_THIS FEATURE IS CURRENTLY NON-FUNCTIONAL_
+
 Set `INTERACTIVE=1` to pause the build after `install.sh` and drop into a live bash shell inside the chroot. This lets you inspect the environment, run commands, and make one-off changes before the filesystem is repacked into the ISO.
 
-**With Docker Compose:**
+Issue the command `exit` or press `Ctrl-D` to exit the shell and continue the build process normally.
 
+---
+
+## Usage
+
+### Installing
+Clone this repository locally so that you get the example files and the correct project structure:
 ```bash
-INTERACTIVE=1 docker compose run --rm iso-builder
+git clone https://github.com/0uwl/squared.git
+```
+Move into the cloned repo and build the Squared container image locally:
+```bash
+docker build -t squared:latest    # This assumes you are currently standing inside the repo
+```
+> There is a plan to provide a pre-built Docker image in the future. However, it is very likely that you will have to modify the image yourself to fit your needs.
+
+### Running
+
+__Docker Compose__
+
+A compose.yml is included in the repo but you must change the volume that binds the base Ubuntu Desktop ISO file in to the build container. 
+
+It is most convenient to use `docker compose run` instead of the usual `docker compose up` since this command has the `--rm` flag which automatically removes the container after exiting.
+```bash
+docker compose run --rm squared
 ```
 
-**With Docker directly:**
+__Docker run__
+
+If you prefer to run the container directly, you can do so with the following command (assuming you named the image `squared` when building it):
 
 ```bash
-docker run --rm -it --privileged \
-    -e INTERACTIVE=1 \
+docker run --rm --privileged \
     -v /path/to/ubuntu-desktop-amd64.iso:/input/base.iso:ro \
     -v $(pwd)/overlay:/build/overlay:ro \
     -v $(pwd)/work:/build/work \
     -v $(pwd)/output:/output \
-    iso-builder
+    squared
 ```
+Remember to update the base ISO volume.
 
-> **Note:** The `-it` flag (or `stdin_open`/`tty` in Compose) is required. Without a TTY, the interactive shell exits immediately.
+### Output
+The finished ISO is written to `./output/` with a datestamp in the filename by default. If you used the environment variable `OUTPUT_NAME`, the datestamp will still be added. 
 
-Type `exit` or press `Ctrl-D` to leave the shell and continue the build normally.
+If you plan to use the environment variable `OUTPUT_DIR` it is important to remember that you must also make a volume for the corresponding host directory where `OUTPUT_DIR` will be mounted, otherwise the output ISO will be stuck inside the container and removed with it.
