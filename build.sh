@@ -11,6 +11,7 @@ WORK_FS="/build/work/squashfs"
 OVERLAY_DIR="/build/overlay"
 SCRIPT_DIR="/build/scripts"
 GRUB_CFG="/build/grub/grub.cfg"
+CLEAN_WORK="${CLEAN_WORK:-0}"
 LABEL="${LABEL:-CUSTOM_UBUNTU}"
 SQUASHFS="${SQUASHFS:-}"
 OUTPUT_NAME="${OUTPUT_NAME:-custom-ubuntu}"
@@ -41,10 +42,13 @@ mkdir -p "$WORK_ISO" "$WORK_FS" "$OUTPUT_DIR"
 # -- Step 1: Extract source ISO ------------------------------------------------
 echo
 echo "[1/6] Extracting base ISO..."
-# Wipe any previous run's extracted ISO
-rm -rf "${WORK_ISO:?}"/*
-xorriso -osirrox on -indev "$BASE_ISO" -extract / "$WORK_ISO" 2>/dev/null
-chmod -R u+w "$WORK_ISO"
+if [[ "$CLEAN_WORK" == "1" ]] || [[ -z "$(ls -A "$WORK_ISO" 2>/dev/null)" ]]; then
+    rm -rf "${WORK_ISO:?}"/*
+    xorriso -osirrox on -indev "$BASE_ISO" -extract / "$WORK_ISO" 2>/dev/null
+    chmod -R u+w "$WORK_ISO"
+else
+    echo "      Reusing cached ISO contents (set CLEAN_WORK=1 to force re-extract)."
+fi
 
 # Capture the boot layout flags from the source ISO's system area (MBR, GPT,
 # El Torito). xorriso reads these directly from the ISO's byte ranges, not
@@ -88,10 +92,14 @@ echo "      Done."
 # -- Step 2: Extract squashfs root filesystem ----------------------------------
 echo
 echo "[2/6] Extracting squashfs root filesystem..."
-rm -rf "${WORK_FS:?}"
-mkdir -p "$WORK_FS"
-unsquashfs -d "$WORK_FS" "$WORK_ISO/casper/$SQUASHFS"
-echo "      Done."
+if [[ "$CLEAN_WORK" == "1" ]] || [[ -z "$(ls -A "$WORK_FS" 2>/dev/null)" ]]; then
+    rm -rf "${WORK_FS:?}"
+    mkdir -p "$WORK_FS"
+    unsquashfs -d "$WORK_FS" "$WORK_ISO/casper/$SQUASHFS"
+    echo "      Done."
+else
+    echo "      Reusing cached squashfs contents (set CLEAN_WORK=1 to force re-extract)."
+fi
 
 # -- Step 3: Prepare chroot ----------------------------------------------------
 echo
@@ -128,9 +136,13 @@ cleanup() {
     umount -lf "$WORK_FS/sys"     2>/dev/null || true
     umount -lf "$WORK_FS/run"     2>/dev/null || true
 
-    echo "[cleanup] Removing intermediate build artifacts..."
-    rm -rf "${WORK_FS:?}" "${WORK_ISO:?}"
-    echo "[cleanup] Post-run cleanup complete"
+    if [[ "$CLEAN_WORK" == "1" ]]; then
+        echo "[cleanup] Removing intermediate build artifacts..."
+        rm -rf "${WORK_FS:?}" "${WORK_ISO:?}"
+        echo "[cleanup] Post-run cleanup complete"
+    else
+        echo "[cleanup] Work directory preserved for incremental builds (set CLEAN_WORK=1 to remove)"
+    fi
 }
 trap cleanup EXIT
 

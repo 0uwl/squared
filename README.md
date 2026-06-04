@@ -128,3 +128,6 @@ Remember to update the base ISO volume.
 The finished ISO is written to `./output/` with a datestamp in the filename by default. If you used the environment variable `OUTPUT_NAME`, the datestamp will still be added. 
 
 If you plan to use the environment variable `OUTPUT_DIR` it is important to remember that you must also make a volume for the corresponding host directory where `OUTPUT_DIR` will be mounted, otherwise the output ISO will be stuck inside the container and removed with it.
+
+## Planned future features
+* Support for cloud-init scripts
