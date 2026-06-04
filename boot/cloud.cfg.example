@@ -1,0 +1,83 @@
+# cloud-init configuration
+# To use this file, copy it to boot/cloud.cfg and customize as needed.
+# It will be placed at /etc/cloud/cloud.cfg in the squashfs before repacking.
+#
+# Reference: https://cloudinit.readthedocs.io/en/latest/reference/base_config_reference.html
+
+# Datasources tell cloud-init where to look for instance metadata.
+# NoCloud covers bare-metal and local VMs with no metadata service.
+# Add cloud provider datasources (Ec2, OpenStack, Azure, GCE) as needed.
+datasource_list:
+  - NoCloud
+  - None
+
+# Default user created on first boot.
+# Remove 'users: [default]' entirely to suppress default user creation.
+users:
+  - default
+
+system_info:
+  distro: ubuntu
+  default_user:
+    name: ubuntu
+    lock_passwd: false
+    gecos: Ubuntu
+    groups:
+      - adm
+      - audio
+      - cdrom
+      - dialout
+      - dip
+      - floppy
+      - plugdev
+      - sudo
+      - video
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
+  network:
+    renderers:
+      - netplan
+      - eni
+      - sysconfig
+
+# When true, cloud-init will not overwrite a hostname set by other means.
+preserve_hostname: false
+
+cloud_init_modules:
+  - migrator
+  - seed_random
+  - bootcmd
+  - write-files
+  - growpart
+  - resizefs
+  - disk_setup
+  - mounts
+  - set_hostname
+  - update_hostname
+  - update_etc_hosts
+  - ca-certs
+  - rsyslog
+  - users-groups
+  - ssh
+
+cloud_config_modules:
+  - ssh-import-id
+  - locale
+  - set-passwords
+  - grub-dpkg
+  - apt-pipelining
+  - apt-configure
+  - ntp
+  - timezone
+  - runcmd
+
+cloud_final_modules:
+  - package-update-upgrade-install
+  - write-files-deferred
+  - scripts-vendor
+  - scripts-per-once
+  - scripts-per-boot
+  - scripts-per-instance
+  - scripts-user
+  - final-message
+  - power-state-change

@@ -10,7 +10,8 @@ WORK_ISO="/build/work/iso"
 WORK_FS="/build/work/squashfs"
 OVERLAY_DIR="/build/overlay"
 SCRIPT_DIR="/build/scripts"
-GRUB_CFG="/build/grub/grub.cfg"
+GRUB_CFG="/build/boot/grub.cfg"
+CLOUD_CFG="${CLOUD_CFG:-/build/boot/cloud.cfg}"
 CLEAN_WORK="${CLEAN_WORK:-0}"
 LABEL="${LABEL:-CUSTOM_UBUNTU}"
 SQUASHFS="${SQUASHFS:-}"
@@ -185,6 +186,15 @@ if [[ "${INTERACTIVE:-0}" == "1" ]]; then
     PS1='(chroot) \u:\w\$ ' TERM="$TERM" chroot "$WORK_FS" /bin/bash --norc --noprofile -i || true
     echo
     echo "[interactive] Shell exited. Continuing build..."
+fi
+
+# -- Optional: Inject custom cloud.cfg -----------------------------------------
+if [[ -f "$CLOUD_CFG" ]]; then
+    echo
+    echo "[cloud.cfg] Injecting custom cloud.cfg into squashfs..."
+    mkdir -p "$WORK_FS/etc/cloud"
+    cp "$CLOUD_CFG" "$WORK_FS/etc/cloud/cloud.cfg"
+    echo "            Done: $CLOUD_CFG → /etc/cloud/cloud.cfg"
 fi
 
 # -- Step 5: Repack squashfs ---------------------------------------------------

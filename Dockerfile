@@ -32,7 +32,7 @@ WORKDIR /build
 
 COPY build.sh       /build/build.sh
 COPY scripts/       /build/scripts/
-COPY grub/          /build/grub/
+COPY boot/          /build/boot/
 
 RUN chmod +x /build/build.sh /build/scripts/*.sh
 
